@@ -33,6 +33,12 @@ class AdbManager():
             cmd = "adb -e shell monkey -p " + packname + " --throttle " + throttle + " --pct-pinchzoom 2 --pct-rotation 2 --pct-syskeys 1 --kill-process-after-error --monitor-native-crashes -s 1234 -v -v -v  " + total_events + " >" + logfile
         return self.adb_cmd(cmd)
 
+    def adb_fastbot(self, times = "5", throttle="100"):
+        logfile = self.logname
+        packname = os.path.basename(self.packname).strip('.apk')
+        cmd = "adb -e shell CLASSPATH=/sdcard/monkeyq.jar:/sdcard/framework.jar exec app_process /system/bin com.android.commands.monkey.Monkey -p "+packname +" --agent robot --running-minutes "+times+" --throttle "+throttle+" --ignore-crashes -v -v -v --bugreport "+ " > ./XiaomiLogs/" + logfile
+        return self.adb_cmd(cmd)
+
     def adb_install(self):
         packname = self.packname
         cmd = "adb -e install -g  -t " + packname
@@ -81,8 +87,17 @@ class AdbManager():
         return self.adb_cmd(cmd)
 
     def log_delete(self):
-        cmd = "adb -e pull /sdcard/"+self.logcat
+        cmd = "adb -e pull /sdcard/"+self.logcat+" ./XiaomiLogs/"+self.logcat
         self.adb_cmd(cmd)
         cmd = "adb -e shell rm -r /sdcard/"+self.logcat
         return self.adb_cmd(cmd)
+
+    def fastbot_crashlog(self):
+        packname = os.path.basename(self.packname).strip('.apk')
+        cmd = "adb -e pull /sdcard/crash-dump.log ./XiaomiLogs/"+packname+"_dump.txt"
+        self.adb_cmd(cmd)
+        cmd = "adb -e pull /sdcard/oom-traces.log ./XiaomiLogs/"+packname+"_traces.txt"
+        self.adb_cmd(cmd)
+        cmd = "adb -e shell rm -rf /sdcard/crash-dump.log /sdcard/oom-traces.log"
+        self.adb_cmd(cmd)
 

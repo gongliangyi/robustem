@@ -43,12 +43,13 @@ def test_all_apks():
         #if os.path.exists(logcat):
            # os.remove(logcat)
         apktest = ApkTest(apk,logname,logcat)
+        apktest.run_logcat()
         results = apktest.run_start()
         if results == "FFFF":
             print("Install Failed "+apk)
             break
         print("start packname "+sapk)
-        apktest.run()
+        apktest.run_monkey()
         print("ready to stop packname "+sapk)
         apktest.run_stop()
         time.sleep(2)
@@ -67,11 +68,11 @@ def test_uninstall_apk():
             print("uninstall "+apk+" failed")
 
 def test_install_apk():
-    apks = ApkManager("/home/system-pc/EmulatorCrash/Xiaomi/")
+    apks = ApkManager("/media/system-pc/XDISK/apkfab/")
     apks.isCanInstall()
 
 if __name__ == '__main__':
-   # test_install_apk()
+    #test_install_apk()
     test_all_apks()
 
 
