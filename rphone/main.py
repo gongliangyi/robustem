@@ -1,15 +1,9 @@
 # This is a sample Python script.
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Dec 28 16:12:30 2020
-
-@author: GLY
-"""
-
+# Press ⌃R to execute it or replace it with your code.
+# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+import os
+from Deal_log import Deal_log
 import os
 from AdbManager import AdbManager
 from ApkManager import ApkManager
@@ -70,10 +64,52 @@ def test_install_apk():
     apks = ApkManager("/home/system-pc/EmulatorCrash/Xiaomi/")
     apks.isCanInstall()
 
+def file_walk(fold):
+    file_names = []
+    files = os.listdir(fold)
+    for f in files:
+        f_d = os.path.join(fold,f)
+        if os.path.isdir(f_d):
+            file_walk(f_d)
+        else:
+            file_names.append(os.path.join(fold,f_d))
+    return file_names
+
+def process_file(fold):
+    # Use a breakpoint in the code line below to debug your script.
+    files_list = file_walk(fold)
+    deal_log = Deal_log("deal_log")
+    failed_monkey = "F_Monkey.txt"
+    failed_logcat = "F_Logcat.txt"
+    str1 = "_monkey"
+    str2 = "_logcat"
+
+    for file in files_list:
+        if str1 in file:
+            monkey = deal_log.deal_monkey(file)
+            filename = os.path.basename(file)
+            apkname = os.path.splitext(filename)[0].replace("_monkey","")
+            if monkey == 3:
+                with open(failed_monkey, 'a') as wf:
+                    wf.write(apkname+"\tsuccess\n")
+            else:
+                with open(failed_monkey, 'a') as wf:
+                    wf.write(apkname+"\tfailed\n")
+    #count all crash
+        elif str2 in file:
+            logcat = deal_log.deal_logcat(file)
+            filename = os.path.basename(file)
+            apkname = os.path.splitext(filename)[0].replace("_logcat", "")
+            if logcat == -1:
+                with open(failed_logcat, 'a') as wf:
+                    wf.write(apkname + "\tfailed\n")
+            else:
+                with open(failed_logcat, 'a') as wf:
+                    wf.write(apkname + "\tsuccess\n")
+
+
+# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-   # test_install_apk()
-    test_all_apks()
-
-
-
+   #process_file("/Users/gongliangyi/Documents/Emulation_crash/pythonProject/XiaomiLog/")
+   test_all_apks()
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

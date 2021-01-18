@@ -15,20 +15,17 @@ import ctypes
 
 def _async_raise(tid, exctype):
 	"""raises the exception, performs cleanup if needed"""
-	try:
-		tid = ctypes.c_long(tid)
-		if not inspect.isclass(exctype):
-			exctype = type(exctype)
-		res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
-		if res == 0:
-			raise ValueError("invalid thread id")
-		elif res != 1:
-			# """if it returns a number greater than one, you're in trouble,
+	tid = ctypes.c_long(tid)
+	if not inspect.isclass(exctype):
+		exctype = type(exctype)
+	res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
+	if res == 0:
+		raise ValueError("invalid thread id")
+	elif res != 1:
+		# """if it returns a number greater than one, you're in trouble,
 		# and you should call it again with exc=NULL to revert the effect"""
-			ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
-			raise SystemError("PyThreadState_SetAsyncExc failed")
-	except:
-		print("async_raise error")
+		ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
+		raise SystemError("PyThreadState_SetAsyncExc failed")
 
 
 def stop_thread(thread):
@@ -44,6 +41,7 @@ def stop_thread(thread):
 
 def stop_logcat(adb):
 	adb.log_delete()
+	adb.fastbot_crashlog()
 	print("Logcat Delete Over...")
 
 def run_logcat(adb):
@@ -53,16 +51,17 @@ def run_logcat(adb):
 	print("Logcat All over....")
 
 def run_monkey(adb):
-	adb.adb_monkey()
+	adb.adb_fastbot()
 	print("Monkey Over....")
 
 
 
 
 class ApkTest():
-	def __init__(self, packname,logmonkey,logcat):
+	def __init__(self, packname,logmonkey,logcat,plogcat=0):
 		self.pname = packname
 		self.adb = AdbManager(packname,logmonkey,logcat)
+		self.l_pid = plogcat
 
 	def run_start(self):
 		return self.adb.adb_install()
@@ -71,15 +70,23 @@ class ApkTest():
 		self.adb.adb_uninstall()
 
 
-	def run(self):
-		threads=[]
-		monkey_pid = threading.Thread(target=run_monkey, args=(self.adb,))
-		logcat_pid = threading.Thread(target=run_logcat, args=(self.adb,))
+	def run_logcat(self):
+		try:
+			#start thread, then log error
+			logcat_pid = threading.Thread(target=run_logcat, args=(self.adb,))
+			self.l_pid = logcat_pid
+			logcat_pid.start()
+			print("apktest over....")
+		except:
+			print("logcat error")
 
-		logcat_pid.start()
-		monkey_pid.start()
-		monkey_pid.join()
-		stop_logcat(self.adb)
-		stop_thread(logcat_pid)
-		print("apktest over....")
-
+	def run_monkey(self):
+		try:
+			monkey_pid = threading.Thread(target=run_monkey, args=(self.adb,))
+			monkey_pid.start()
+		# if monkey over, then pull the logfile and kill logcat
+			stop_logcat(self.adb)
+			stop_thread(self.l_pid)
+			monkey_pid.join()
+		except:
+			print("monkey run error")
